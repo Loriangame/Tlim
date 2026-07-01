@@ -321,6 +321,7 @@
             padding: 10px 14px;
             gap: 8px;
             border-bottom: 1px solid #2b3b4a;
+            position: relative;
         }
         #searchRow input {
             flex: 1;
@@ -335,6 +336,57 @@
         #searchRow input::placeholder {
             color: #6b7f8f;
         }
+        #searchRow .search-results {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1f2c38;
+            border-radius: 12px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            border: 1px solid #2b3b4a;
+        }
+        #searchRow .search-results.show {
+            display: block;
+        }
+        #searchRow .search-results .result-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+            border-bottom: 1px solid #2b3b4a;
+        }
+        #searchRow .search-results .result-item:hover {
+            background: #2b3b4a;
+        }
+        #searchRow .search-results .result-item .result-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            font-size: 14px;
+            background: #2b5278;
+            flex-shrink: 0;
+        }
+        #searchRow .search-results .result-item .result-name {
+            color: #e1e9f0;
+            font-size: 14px;
+        }
+        #searchRow .search-results .result-item .result-type {
+            color: #8e9fb1;
+            font-size: 12px;
+            margin-left: auto;
+        }
         #addBtn {
             background: #2b5278;
             border: none;
@@ -348,6 +400,7 @@
             align-items: center;
             justify-content: center;
             transition: 0.2s;
+            flex-shrink: 0;
         }
         #addBtn:hover {
             background: #3a6b94;
@@ -487,10 +540,47 @@
             word-break: break-word;
             position: relative;
             animation: fadeIn 0.3s ease;
+            transition: 0.2s;
+        }
+        .msg:hover .msg-delete-btn {
+            opacity: 1;
+        }
+        .msg-delete-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f28b82;
+            color: #0e1621;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .msg-delete-btn:hover {
+            background: #ff6b6b;
+            transform: scale(1.1);
+        }
+        .msg-delete-btn.delete-own {
+            background: #64b5f6;
+        }
+        .msg-delete-btn.delete-own:hover {
+            background: #4da3e0;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.8); }
         }
         .msg.own {
             align-self: flex-end;
@@ -507,6 +597,9 @@
             color: #8e9fb1;
             font-size: 13px;
             max-width: 90%;
+        }
+        .msg.system .msg-delete-btn {
+            display: none;
         }
         .msg .time {
             font-size: 11px;
@@ -941,7 +1034,8 @@
                 <button class="logout-btn" id="logoutBtn">⏻</button>
             </div>
             <div id="searchRow">
-                <input type="text" id="searchInput" placeholder="Поиск чатов..." />
+                <input type="text" id="searchInput" placeholder="Поиск чатов и пользователей..." />
+                <div class="search-results" id="searchResults"></div>
                 <button id="addBtn">+</button>
             </div>
             <div id="foldersBar"></div>
@@ -1353,7 +1447,23 @@
                 content = '📌 ' + content;
             }
             
-            div.innerHTML = content + `<div class="time">${formatTime(msg.time)}</div>`;
+            // Кнопка удаления (только для своих сообщений и сообщений в чатах, не системных)
+            if (!isSystem && (isOwn || (chat.type === 'channel' && chat.isOwner))) {
+                const deleteBtn = `<button class="msg-delete-btn ${isOwn ? 'delete-own' : ''}" data-msg-id="${msg.id}" title="Удалить сообщение">✕</button>`;
+                div.innerHTML = deleteBtn + content + `<div class="time">${formatTime(msg.time)}</div>`;
+            } else {
+                div.innerHTML = content + `<div class="time">${formatTime(msg.time)}</div>`;
+            }
+            
+            // Обработчик удаления
+            const deleteBtn = div.querySelector('.msg-delete-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const msgId = deleteBtn.dataset.msgId;
+                    deleteMessage(chat.id, msgId);
+                });
+            }
             
             div.querySelectorAll('.file-container').forEach(container => {
                 container.addEventListener('click', (e) => {
@@ -1388,6 +1498,18 @@
         document.getElementById('chatHeaderAvatar').style.background = chat.avatarColor || '#2b5278';
         document.getElementById('chatHeaderType').textContent = chat.isBot ? '🤖 Бот DeepSeek' : 
             (chat.type === 'channel' ? '📢 Канал' : chat.type === 'group' ? '👥 Группа, ' + (chat.participantNames || []).join(', ') : '💬 Личный чат');
+    }
+
+    function deleteMessage(chatId, msgId) {
+        if (confirm('Удалить это сообщение?')) {
+            const chat = getChat(chatId);
+            if (chat) {
+                chat.messages = chat.messages.filter(m => m.id !== msgId);
+                saveState();
+                renderMessages();
+                renderChatList();
+            }
+        }
     }
 
     function downloadFile(dataUrl, fileName) {
@@ -1485,7 +1607,6 @@
 
     // ======== CHAT CREATION ========
     function createChat(type, name, participants, participantNames) {
-        // Проверяем, существует ли чат
         const existing = state.chats.find(c => c.name === name && c.type === type);
         if (existing) {
             alert('Чат с таким названием уже существует!');
@@ -1504,6 +1625,7 @@
             folderId: null,
             unread: 0,
             isBot: false,
+            isOwner: true,
             created: Date.now(),
         };
         
@@ -1542,6 +1664,72 @@
         saveState();
         renderAll();
         return true;
+    }
+
+    // ======== SEARCH USERS ========
+    function searchUsers(query) {
+        if (!query || query.length < 2) {
+            document.getElementById('searchResults').classList.remove('show');
+            return;
+        }
+        
+        const results = state.allUsers.filter(u => 
+            u.id !== state.user.id && 
+            u.name.toLowerCase().includes(query.toLowerCase())
+        );
+        
+        const container = document.getElementById('searchResults');
+        container.innerHTML = '';
+        
+        if (results.length === 0) {
+            container.innerHTML = '<div style="padding:10px 14px;color:#8e9fb1;">Пользователи не найдены</div>';
+        } else {
+            results.forEach(user => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `
+                    <div class="result-avatar" style="background:${user.avatarColor || '#2b5278'}">${user.name.charAt(0).toUpperCase()}</div>
+                    <span class="result-name">${user.name}</span>
+                    <span class="result-type">👤 Пользователь</span>
+                `;
+                div.addEventListener('click', () => {
+                    // Создаем личный чат с пользователем
+                    const chatName = user.name;
+                    const existing = state.chats.find(c => 
+                        c.type === 'chat' && 
+                        c.participants && 
+                        c.participants.includes(user.id) && 
+                        c.participants.includes(state.user.id)
+                    );
+                    if (existing) {
+                        state.currentChatId = existing.id;
+                    } else {
+                        const newChat = {
+                            id: generateId(),
+                            type: 'chat',
+                            name: chatName,
+                            avatar: user.name.charAt(0).toUpperCase(),
+                            avatarColor: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
+                            participants: [state.user.id, user.id],
+                            participantNames: [state.user.name, user.name],
+                            messages: [],
+                            folderId: null,
+                            unread: 0,
+                            isBot: false,
+                            created: Date.now(),
+                        };
+                        state.chats.push(newChat);
+                        state.currentChatId = newChat.id;
+                    }
+                    document.getElementById('searchInput').value = '';
+                    document.getElementById('searchResults').classList.remove('show');
+                    saveState();
+                    renderAll();
+                });
+                container.appendChild(div);
+            });
+        }
+        container.classList.add('show');
     }
 
     // ======== AUTH ========
@@ -1620,6 +1808,7 @@
             name: name, 
             email: email, 
             password: password,
+            avatarColor: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
             registered: Date.now() 
         };
         state.allUsers.push(user);
@@ -1684,7 +1873,7 @@
                 messages: [{ 
                     id: '1', 
                     sender: 'bot', 
-                    text: '🎉 Добро пожаловать в Tlim!\n\nЗдесь ты можешь:\n• Создавать каналы и группы\n• Отправлять видео и кружки\n• Отправлять файлы 📎\n• Общаться с DeepSeek Bot\n• Группировать чаты в папки\n\nНажми +, чтобы начать!', 
+                    text: '🎉 Добро пожаловать в Tlim!\n\nЗдесь ты можешь:\n• Создавать каналы и группы\n• Отправлять видео и кружки\n• Отправлять файлы 📎\n• Общаться с DeepSeek Bot\n• Группировать чаты в папки\n• Искать пользователей в поиске\n\nНажми +, чтобы начать!', 
                     time: Date.now(), 
                     isBot: true 
                 }],
@@ -1937,7 +2126,6 @@
                         });
                     });
                     
-                    // Также добавляем обработчик на весь блок
                     resultsDiv.querySelectorAll('.user-search-result').forEach(el => {
                         el.addEventListener('click', (e) => {
                             if (e.target.classList.contains('add-btn')) return;
@@ -1951,7 +2139,6 @@
             searchInput.addEventListener('input', updateSearchResults);
             updateSearchResults();
 
-            // Обработчики для удаления пользователей
             document.addEventListener('click', function handler(e) {
                 if (e.target.classList.contains('remove-btn')) {
                     selectedUsers = selectedUsers.filter(u => u.id !== e.target.dataset.id);
@@ -2212,6 +2399,29 @@
 
         document.getElementById('logoutBtn').addEventListener('click', logout);
 
+        // Search users
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            if (query.length >= 2) {
+                searchUsers(query);
+            } else {
+                document.getElementById('searchResults').classList.remove('show');
+            }
+        });
+        
+        document.getElementById('searchInput').addEventListener('blur', () => {
+            setTimeout(() => {
+                document.getElementById('searchResults').classList.remove('show');
+            }, 300);
+        });
+        
+        document.getElementById('searchInput').addEventListener('focus', () => {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query.length >= 2) {
+                searchUsers(query);
+            }
+        });
+
         // Send message
         document.getElementById('sendBtn').addEventListener('click', () => {
             const input = document.getElementById('messageInput');
@@ -2250,7 +2460,6 @@
         });
 
         document.getElementById('addBtn').addEventListener('click', showCreateMenu);
-        document.getElementById('searchInput').addEventListener('input', renderChatList);
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeModal();
