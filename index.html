@@ -371,6 +371,46 @@
             color: #8e9fb1;
         }
 
+        /* ===== PINNED BAR ===== */
+        #pinnedBar {
+            display: none;
+            background: #1a2a3a;
+            padding: 6px 16px;
+            border-bottom: 1px solid #2b3b4a;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #pinnedBar:hover {
+            background: #1f3a4a;
+        }
+        #pinnedBar.show {
+            display: flex;
+        }
+        #pinnedBar .pinned-icon {
+            color: #64b5f6;
+            font-size: 16px;
+        }
+        #pinnedBar .pinned-text {
+            flex: 1;
+            font-size: 14px;
+            color: #e1e9f0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #pinnedBar .pinned-text .pinned-count {
+            color: #8e9fb1;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        #pinnedBar .pinned-arrow {
+            color: #8e9fb1;
+            font-size: 14px;
+        }
+
         /* Messages */
         #messagesContainer {
             flex: 1;
@@ -392,16 +432,6 @@
         .msg.pinned {
             border: 2px solid #64b5f6;
             background: #1a2a3a;
-        }
-        .msg.pinned::before {
-            content: "📌";
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            font-size: 14px;
-            background: #17212b;
-            border-radius: 50%;
-            padding: 2px;
         }
         .msg.own {
             align-self: flex-end;
@@ -435,7 +465,7 @@
         .msg .file-container .file-name { font-size: 13px; font-weight: 500; }
         .msg .file-container .file-size { font-size: 11px; color: #8e9fb1; }
         .msg .file-container .download-btn { background: #2b5278; border: none; color: #fff; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
-        .msg img { max-width: 100%; border-radius: 12px; display: block; margin-top: 4px; }
+        .msg img { max-width: 100%; border-radius: 12px; display: block; margin-top: 4px; max-height: 400px; object-fit: contain; }
         
         .msg-actions {
             display: flex;
@@ -470,7 +500,6 @@
         .msg-actions .pin-btn.pinned { background: #64b5f6; color: #0e1621; }
         .msg-actions .delete-btn { background: #f28b82; color: #0e1621; }
         .msg-actions .delete-btn:hover { background: #ff6b6b; }
-        .msg-actions .unpin-btn { background: #64b5f6; color: #0e1621; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -628,6 +657,8 @@
             #inputRow { padding: 6px 10px 10px; }
             #inputRow .input-wrapper input { font-size: 14px; }
             #inputRow .btn-send { width: 38px; height: 38px; font-size: 16px; }
+            #pinnedBar { padding: 4px 12px; }
+            #pinnedBar .pinned-text { font-size: 12px; }
         }
         @media (max-width: 400px) {
             #topHeader .header-left .tlim-title { font-size: 16px; }
@@ -719,6 +750,14 @@
                     <div class="cv-status" id="cvStatus">онлайн</div>
                 </div>
             </div>
+
+            <!-- PINNED BAR -->
+            <div id="pinnedBar">
+                <span class="pinned-icon">📌</span>
+                <span class="pinned-text" id="pinnedText">Закреплённые сообщения</span>
+                <span class="pinned-arrow">↓</span>
+            </div>
+
             <div id="messagesContainer"></div>
 
             <div id="filePreviewBar">
@@ -744,6 +783,7 @@
 
             <div id="inputRow">
                 <div class="input-wrapper">
+                    <button class="btn-icon" id="cameraBtn" title="Фото">📷</button>
                     <button class="btn-icon" id="fileBtn" title="Файл">📎</button>
                     <button class="btn-icon" id="videoBtn" title="Видео">🎥</button>
                     <button class="btn-icon" id="circleBtn" title="Кружок">⭕</button>
@@ -755,6 +795,7 @@
 
         <input type="file" id="fileInput" class="file-input-hidden" />
         <input type="file" id="videoFileInput" accept="video/*" class="file-input-hidden" />
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" class="file-input-hidden" />
     </div>
 
     <div class="modal-overlay" id="modalOverlay">
@@ -822,6 +863,7 @@
         bot: new SimpleBot(),
         botChatId: null,
         pendingFile: null,
+        pinnedMessageId: null, // для прокрутки к закреплённому
     };
 
     // ======== LOAD/SAVE ========
@@ -836,7 +878,7 @@
                 state.currentChatId = parsed.currentChatId || null;
                 state.botChatId = parsed.botChatId || null;
                 state.allUsers = parsed.allUsers || [];
-                state.chats = state.chats.map(c => ({ ...c, folderId: c.folderId || null }));
+                state.chats = state.chats.map(c => ({ ...c, folderId: c.folderId || null, pinnedMessages: c.pinnedMessages || [] }));
                 if (state.bot) {
                     state.bot.setUserName(state.user?.name || 'Пользователь');
                 }
@@ -890,7 +932,7 @@
             'pdf': '📄', 'doc': '📄', 'txt': '📄',
             'xls': '📊', 'csv': '📊',
             'zip': '📦', 'rar': '📦',
-            'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️',
+            'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'webp': '🖼️',
             'mp3': '🎵', 'wav': '🎵',
             'mp4': '🎬', 'avi': '🎬', 'mkv': '🎬',
             'exe': '⚙️', 'apk': '📱',
@@ -983,35 +1025,24 @@
             container.innerHTML = '';
             return;
         }
+        
+        // Сохраняем позицию прокрутки
+        const scrollPos = container.scrollTop;
+        
         container.innerHTML = '';
         
-        // Показываем закреплённые сообщения сверху
-        const pinnedMessages = chat.pinnedMessages || [];
-        if (pinnedMessages.length > 0) {
-            const pinnedDiv = document.createElement('div');
-            pinnedDiv.style.cssText = 'color:#8e9fb1;font-size:12px;text-align:center;padding:4px;border-bottom:1px solid #2b3b4a;margin-bottom:8px;';
-            pinnedDiv.textContent = '📌 Закреплённые сообщения (' + pinnedMessages.length + ')';
-            container.appendChild(pinnedDiv);
-            
-            pinnedMessages.forEach(msgId => {
-                const msg = chat.messages.find(m => m.id === msgId);
-                if (msg) {
-                    const div = createMessageElement(chat, msg, true);
-                    container.appendChild(div);
-                }
-            });
-        }
-        
-        // Остальные сообщения
+        // Показываем все сообщения в обычном порядке (не перемещаем вверх!)
         (chat.messages || []).forEach(msg => {
             const isPinned = (chat.pinnedMessages || []).includes(msg.id);
-            // Не показываем закреплённые дважды
-            if (!isPinned) {
-                const div = createMessageElement(chat, msg, false);
-                container.appendChild(div);
-            }
+            const div = createMessageElement(chat, msg, isPinned);
+            container.appendChild(div);
         });
-        container.scrollTop = container.scrollHeight;
+        
+        // Восстанавливаем позицию прокрутки
+        container.scrollTop = scrollPos;
+        
+        // Обновляем pinned bar
+        updatePinnedBar(chat);
     }
 
     function createMessageElement(chat, msg, isPinned) {
@@ -1025,10 +1056,15 @@
         else if (isBot) div.classList.add('bot');
         else div.classList.add('other');
         if (isSystem) div.classList.add('system');
-        if (isPinned) div.classList.add('pinned');
+        if (isPinned) {
+            div.classList.add('pinned');
+            div.dataset.pinned = 'true';
+        }
+        div.dataset.msgId = msg.id;
         
         let content = '';
         
+        // Файл или фото
         if (msg.file && msg.file.data) {
             const icon = getFileIcon(msg.file.name);
             const isImage = msg.file.type && msg.file.type.startsWith('image/');
@@ -1061,43 +1097,43 @@
             content = `<div class="msg-text">📌 ${msg.text}</div>`;
         }
         
-        // Действия для сообщений (кроме системных)
-        if (!isSystem) {
+        // Действия для сообщений
+        if (!isSystem && isOwn) {
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'msg-actions';
             
-            // Кнопка закрепления (только для владельцев)
-            if (isOwn || chat.isOwner) {
-                const pinBtn = document.createElement('button');
-                pinBtn.className = 'pin-btn' + (isPinned ? ' pinned' : '');
-                pinBtn.textContent = isPinned ? '📌' : '📌';
-                pinBtn.title = isPinned ? 'Открепить' : 'Закрепить';
-                pinBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    togglePinMessage(chat.id, msg.id);
-                });
-                actionsDiv.appendChild(pinBtn);
-            }
+            // Кнопка закрепления
+            const pinBtn = document.createElement('button');
+            pinBtn.className = 'pin-btn' + (isPinned ? ' pinned' : '');
+            pinBtn.textContent = '📌';
+            pinBtn.title = isPinned ? 'Открепить' : 'Закрепить';
+            pinBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePinMessage(chat.id, msg.id);
+            });
+            actionsDiv.appendChild(pinBtn);
             
-            // Кнопка удаления (только свои)
-            if (isOwn) {
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-btn';
-                deleteBtn.textContent = '✕';
-                deleteBtn.title = 'Удалить';
-                deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (confirm('Удалить сообщение?')) {
-                        deleteMessage(chat.id, msg.id);
-                    }
-                });
-                actionsDiv.appendChild(deleteBtn);
-            }
+            // Кнопка удаления
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '✕';
+            deleteBtn.title = 'Удалить';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Удалить сообщение?')) {
+                    deleteMessage(chat.id, msg.id);
+                }
+            });
+            actionsDiv.appendChild(deleteBtn);
             
             div.appendChild(actionsDiv);
         }
         
-        div.innerHTML += content + `<div class="msg-time">${formatTime(msg.time)}</div>`;
+        // Добавляем содержимое
+        const contentDiv = document.createElement('div');
+        contentDiv.innerHTML = content + `<div class="msg-time">${formatTime(msg.time)}</div>`;
+        div.appendChild(contentDiv.firstChild);
+        div.appendChild(contentDiv.lastChild);
         
         // Обработчики для файлов
         div.querySelectorAll('.file-container').forEach(el => {
@@ -1119,6 +1155,37 @@
         });
         
         return div;
+    }
+
+    function updatePinnedBar(chat) {
+        const bar = document.getElementById('pinnedBar');
+        const pinnedMessages = chat.pinnedMessages || [];
+        
+        if (pinnedMessages.length === 0) {
+            bar.classList.remove('show');
+            return;
+        }
+        
+        bar.classList.add('show');
+        const count = pinnedMessages.length;
+        document.getElementById('pinnedText').innerHTML = 
+            `📌 Закреплённых сообщений: ${count} <span class="pinned-count">(нажмите чтобы перейти)</span>`;
+        
+        // При клике на бар - прокручиваем к первому закреплённому
+        bar.onclick = () => {
+            const firstPinnedId = pinnedMessages[0];
+            const container = document.getElementById('messagesContainer');
+            const pinnedElement = container.querySelector(`[data-msg-id="${firstPinnedId}"]`);
+            if (pinnedElement) {
+                pinnedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Подсвечиваем
+                pinnedElement.style.transition = 'background 0.5s';
+                pinnedElement.style.background = '#2b5278';
+                setTimeout(() => {
+                    pinnedElement.style.background = '';
+                }, 1500);
+            }
+        };
     }
 
     function togglePinMessage(chatId, msgId) {
@@ -1559,6 +1626,11 @@
         reader.readAsDataURL(state.pendingFile);
     }
 
+    // ======== CAMERA ========
+    function handleCamera() {
+        document.getElementById('cameraInput').click();
+    }
+
     // ======== VIDEO / CIRCLE ========
     function handleVideoUpload() {
         document.getElementById('videoFileInput').click();
@@ -1870,6 +1942,30 @@
                 e.preventDefault();
                 document.getElementById('sendBtn').click();
             }
+        });
+
+        // Camera
+        document.getElementById('cameraBtn').addEventListener('click', handleCamera);
+        document.getElementById('cameraInput').addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                const file = e.target.files[0];
+                if (!file.type.startsWith('image/')) {
+                    alert('Выберите изображение');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const fileData = {
+                        name: file.name || 'photo.jpg',
+                        size: file.size,
+                        type: file.type,
+                        data: ev.target.result,
+                    };
+                    sendMessage(null, null, false, fileData);
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = '';
         });
 
         // File upload
