@@ -129,18 +129,18 @@
         /* ===== MAIN APP ===== */
         #mainApp {
             display: none;
-            flex-direction: column;
+            flex-direction: row;
             height: 100%;
             background: #17212b;
             position: relative;
         }
 
-        /* ===== TOP HEADER ===== */
+        /* ===== TOP HEADER (только для мобильных) ===== */
         #topHeader {
+            display: none;
             background: #17212b;
             padding: 12px 16px;
             border-bottom: 1px solid #2b3b4a;
-            display: flex;
             justify-content: space-between;
             align-items: center;
             flex-shrink: 0;
@@ -194,6 +194,7 @@
             overflow-y: auto;
             padding: 8px 0;
             background: #17212b;
+            height: 100%;
         }
         .chat-item {
             display: flex;
@@ -203,6 +204,9 @@
             cursor: pointer;
             transition: 0.1s;
             border-bottom: 1px solid #1f2c38;
+        }
+        .chat-item:hover {
+            background: #1f2c38;
         }
         .chat-item:active {
             background: #1f2c38;
@@ -256,12 +260,12 @@
             margin-left: 4px;
         }
 
-        /* ===== BOTTOM BAR ===== */
+        /* ===== BOTTOM BAR (только для мобильных) ===== */
         #bottomBar {
+            display: none;
             background: #17212b;
             border-top: 1px solid #2b3b4a;
             padding: 8px 16px 12px;
-            display: flex;
             justify-content: space-around;
             align-items: center;
             flex-shrink: 0;
@@ -304,7 +308,7 @@
             transform: scale(0.95);
         }
 
-        /* ===== CHAT VIEW (полный экран) ===== */
+        /* ===== CHAT VIEW ===== */
         #chatView {
             display: none;
             flex-direction: column;
@@ -326,7 +330,7 @@
             display: flex;
         }
 
-        /* Chat Header в чате */
+        /* Chat Header */
         #chatViewHeader {
             background: #17212b;
             padding: 10px 16px;
@@ -466,6 +470,12 @@
         .msg .file-container .file-size { font-size: 11px; color: #8e9fb1; }
         .msg .file-container .download-btn { background: #2b5278; border: none; color: #fff; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
         .msg img { max-width: 100%; border-radius: 12px; display: block; margin-top: 4px; max-height: 400px; object-fit: contain; }
+        .msg .audio-container { display: flex; align-items: center; gap: 10px; background: #0e1621; padding: 6px 12px; border-radius: 20px; border: 1px solid #2b3b4a; min-width: 180px; }
+        .msg .audio-container .play-btn { background: #2b5278; border: none; border-radius: 50%; width: 32px; height: 32px; color: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .msg .audio-container .play-btn:hover { background: #3a6b94; }
+        .msg .audio-container .audio-progress { flex: 1; height: 4px; background: #2b3b4a; border-radius: 2px; cursor: pointer; position: relative; }
+        .msg .audio-container .audio-progress .audio-fill { height: 100%; background: #64b5f6; border-radius: 2px; width: 0%; transition: width 0.1s; }
+        .msg .audio-container .audio-time { font-size: 11px; color: #8e9fb1; min-width: 40px; text-align: center; }
         
         .msg-actions {
             display: flex;
@@ -565,6 +575,72 @@
         #inputRow .btn-send:active {
             transform: scale(0.95);
         }
+        #inputRow .btn-send.recording {
+            background: #f28b82;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Voice record bar */
+        #voiceRecordBar {
+            display: none;
+            background: #1f2c38;
+            padding: 8px 16px;
+            border-top: 1px solid #2b3b4a;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        #voiceRecordBar.show { display: flex; }
+        #voiceRecordBar .voice-timer {
+            color: #f28b82;
+            font-weight: bold;
+            font-size: 16px;
+            min-width: 60px;
+        }
+        #voiceRecordBar .voice-wave {
+            flex: 1;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        #voiceRecordBar .voice-wave span {
+            display: block;
+            width: 4px;
+            background: #64b5f6;
+            border-radius: 2px;
+            animation: wave 0.5s infinite alternate;
+        }
+        @keyframes wave {
+            0% { height: 5px; }
+            100% { height: 25px; }
+        }
+        #voiceRecordBar .voice-cancel-btn {
+            background: none;
+            border: none;
+            color: #f28b82;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+        #voiceRecordBar .voice-send-btn {
+            background: #64b5f6;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            color: #0e1621;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
         /* File preview bar */
         #filePreviewBar {
@@ -641,13 +717,72 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #2b5278; border-radius: 4px; }
 
-        @media (max-width: 600px) {
-            #topHeader { padding: 10px 14px; }
+        /* ===== АДАПТИВНОСТЬ ===== */
+        /* МОБИЛЬНЫЙ РЕЖИМ (по умолчанию) */
+        #mainApp {
+            flex-direction: column !important;
+        }
+        #topHeader {
+            display: flex !important;
+        }
+        #bottomBar {
+            display: flex !important;
+        }
+        #chatListContainer {
+            flex: 1 !important;
+            width: 100% !important;
+            border-right: none !important;
+        }
+        #chatView {
+            display: none;
+        }
+        #chatView.open {
+            display: flex;
+        }
+        .desktop-only {
+            display: none !important;
+        }
+
+        /* ДЕСКТОПНЫЙ РЕЖИМ */
+        @media (min-width: 769px) and (pointer: fine) {
+            #mainApp {
+                flex-direction: row !important;
+            }
+            #topHeader {
+                display: none !important;
+            }
+            #bottomBar {
+                display: none !important;
+            }
+            #chatListContainer {
+                flex: none !important;
+                width: 300px !important;
+                min-width: 300px !important;
+                border-right: 1px solid #2b3b4a !important;
+                height: 100% !important;
+            }
+            #chatView {
+                position: relative !important;
+                display: flex !important;
+                animation: none !important;
+                flex: 1 !important;
+            }
+            #chatView .back-btn {
+                display: none !important;
+            }
+            #chatViewHeader {
+                min-height: 64px;
+            }
+            .desktop-only {
+                display: block !important;
+            }
+        }
+
+        @media (max-width: 768px) {
             #topHeader .header-left .tlim-title { font-size: 18px; }
-            #bottomBar { padding: 6px 12px 10px; }
-            #bottomBar .bottom-btn { padding: 6px 12px; font-size: 16px; }
             #bottomBar .bottom-btn .btn-label { font-size: 12px; }
-            #bottomBar .bottom-btn.add-btn { padding: 6px 16px; font-size: 14px; }
+            #bottomBar .bottom-btn { padding: 6px 12px; font-size: 16px; }
+            #bottomBar { padding: 6px 12px 10px; }
             .chat-avatar { width: 42px; height: 42px; font-size: 16px; }
             .chat-name { font-size: 14px; }
             .msg { max-width: 85%; padding: 8px 12px; }
@@ -717,6 +852,7 @@
 
     <!-- MAIN APP -->
     <div id="mainApp">
+        <!-- Верхний заголовок (только для мобильных) -->
         <div id="topHeader">
             <div class="header-left">
                 <div class="user-avatar" id="userAvatar">U</div>
@@ -727,10 +863,12 @@
             </div>
         </div>
 
+        <!-- Список чатов (слева на десктопе, на весь экран на мобильных) -->
         <div id="chatListContainer">
             <div id="chatList"></div>
         </div>
 
+        <!-- Нижняя панель (только для мобильных) -->
         <div id="bottomBar">
             <button class="bottom-btn active" id="chatsBtn">
                 <span class="btn-icon">💬</span>
@@ -741,6 +879,7 @@
             </button>
         </div>
 
+        <!-- Окно чата (справа на десктопе, на весь экран на мобильных) -->
         <div id="chatView">
             <div id="chatViewHeader">
                 <button class="back-btn" id="backBtn">←</button>
@@ -751,7 +890,6 @@
                 </div>
             </div>
 
-            <!-- PINNED BAR -->
             <div id="pinnedBar">
                 <span class="pinned-icon">📌</span>
                 <span class="pinned-text" id="pinnedText">Закреплённые сообщения</span>
@@ -771,6 +909,24 @@
                 <button class="remove-file-btn" id="removeFileBtn">✕</button>
             </div>
 
+            <div id="voiceRecordBar">
+                <span class="voice-timer" id="voiceTimer">0:00</span>
+                <div class="voice-wave" id="voiceWave">
+                    <span style="animation-delay:0.0s"></span>
+                    <span style="animation-delay:0.1s"></span>
+                    <span style="animation-delay:0.2s"></span>
+                    <span style="animation-delay:0.3s"></span>
+                    <span style="animation-delay:0.4s"></span>
+                    <span style="animation-delay:0.5s"></span>
+                    <span style="animation-delay:0.6s"></span>
+                    <span style="animation-delay:0.7s"></span>
+                    <span style="animation-delay:0.8s"></span>
+                    <span style="animation-delay:0.9s"></span>
+                </div>
+                <button class="voice-cancel-btn" id="voiceCancelBtn">✕</button>
+                <button class="voice-send-btn" id="voiceSendBtn">➤</button>
+            </div>
+
             <div id="circleRecorder">
                 <video id="circlePreview" autoplay muted></video>
                 <div class="record-controls">
@@ -787,6 +943,7 @@
                     <button class="btn-icon" id="fileBtn" title="Файл">📎</button>
                     <button class="btn-icon" id="videoBtn" title="Видео">🎥</button>
                     <button class="btn-icon" id="circleBtn" title="Кружок">⭕</button>
+                    <button class="btn-icon" id="voiceBtn" title="Голосовое">🎤</button>
                     <input type="text" id="messageInput" placeholder="Сообщение..." />
                 </div>
                 <button class="btn-send" id="sendBtn">➤</button>
@@ -863,7 +1020,13 @@
         bot: new SimpleBot(),
         botChatId: null,
         pendingFile: null,
-        pinnedMessageId: null, // для прокрутки к закреплённому
+        // Voice
+        mediaRecorder: null,
+        audioChunks: [],
+        isRecording: false,
+        recordingStartTime: null,
+        recordingTimer: null,
+        recordingSeconds: 0,
     };
 
     // ======== LOAD/SAVE ========
@@ -940,6 +1103,11 @@
         };
         return icons[ext] || '📎';
     }
+    function formatDuration(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return m + ':' + (s < 10 ? '0' : '') + s;
+    }
 
     // ======== BOT INIT ========
     function initBot() {
@@ -996,6 +1164,7 @@
                 else if (lastMsg.isCircle) lastText = '⭕ Кружок';
                 else if (lastMsg.isSystem) lastText = '📌 ' + lastMsg.text;
                 else if (lastMsg.file) lastText = '📎 ' + (lastMsg.file.name || 'Файл');
+                else if (lastMsg.audio) lastText = '🎤 Голосовое';
                 lastTime = formatTime(lastMsg.time);
                 if (lastText.length > 30) lastText = lastText.substring(0, 30) + '...';
             }
@@ -1026,22 +1195,16 @@
             return;
         }
         
-        // Сохраняем позицию прокрутки
         const scrollPos = container.scrollTop;
-        
         container.innerHTML = '';
         
-        // Показываем все сообщения в обычном порядке (не перемещаем вверх!)
         (chat.messages || []).forEach(msg => {
             const isPinned = (chat.pinnedMessages || []).includes(msg.id);
             const div = createMessageElement(chat, msg, isPinned);
             container.appendChild(div);
         });
         
-        // Восстанавливаем позицию прокрутки
         container.scrollTop = scrollPos;
-        
-        // Обновляем pinned bar
         updatePinnedBar(chat);
     }
 
@@ -1064,8 +1227,19 @@
         
         let content = '';
         
-        // Файл или фото
-        if (msg.file && msg.file.data) {
+        // Аудио
+        if (msg.audio && msg.audio.data) {
+            content += `
+                <div class="audio-container" data-audio="${msg.audio.data}">
+                    <button class="play-btn">▶</button>
+                    <div class="audio-progress">
+                        <div class="audio-fill"></div>
+                    </div>
+                    <span class="audio-time">${formatDuration(msg.audio.duration || 0)}</span>
+                </div>
+            `;
+            if (msg.text) content += `<div class="msg-text" style="margin-top:4px;">${msg.text}</div>`;
+        } else if (msg.file && msg.file.data) {
             const icon = getFileIcon(msg.file.name);
             const isImage = msg.file.type && msg.file.type.startsWith('image/');
             if (isImage) {
@@ -1097,12 +1271,10 @@
             content = `<div class="msg-text">📌 ${msg.text}</div>`;
         }
         
-        // Действия для сообщений
         if (!isSystem && isOwn) {
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'msg-actions';
             
-            // Кнопка закрепления
             const pinBtn = document.createElement('button');
             pinBtn.className = 'pin-btn' + (isPinned ? ' pinned' : '');
             pinBtn.textContent = '📌';
@@ -1113,7 +1285,6 @@
             });
             actionsDiv.appendChild(pinBtn);
             
-            // Кнопка удаления
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'delete-btn';
             deleteBtn.textContent = '✕';
@@ -1129,13 +1300,57 @@
             div.appendChild(actionsDiv);
         }
         
-        // Добавляем содержимое
         const contentDiv = document.createElement('div');
         contentDiv.innerHTML = content + `<div class="msg-time">${formatTime(msg.time)}</div>`;
         div.appendChild(contentDiv.firstChild);
         div.appendChild(contentDiv.lastChild);
         
-        // Обработчики для файлов
+        // Обработчики аудио
+        div.querySelectorAll('.audio-container').forEach(el => {
+            const audioData = el.dataset.audio;
+            const playBtn = el.querySelector('.play-btn');
+            const progressFill = el.querySelector('.audio-fill');
+            const timeEl = el.querySelector('.audio-time');
+            let audio = null;
+            let isPlaying = false;
+            
+            playBtn.addEventListener('click', () => {
+                if (!audio) {
+                    audio = new Audio(audioData);
+                    audio.addEventListener('timeupdate', () => {
+                        const percent = (audio.currentTime / audio.duration) * 100;
+                        progressFill.style.width = percent + '%';
+                        timeEl.textContent = formatDuration(audio.currentTime);
+                    });
+                    audio.addEventListener('ended', () => {
+                        isPlaying = false;
+                        playBtn.textContent = '▶';
+                        progressFill.style.width = '0%';
+                        timeEl.textContent = formatDuration(msg.audio.duration || 0);
+                    });
+                }
+                
+                if (isPlaying) {
+                    audio.pause();
+                    playBtn.textContent = '▶';
+                    isPlaying = false;
+                } else {
+                    audio.play();
+                    playBtn.textContent = '⏸';
+                    isPlaying = true;
+                }
+            });
+            
+            // Клик по прогрессу
+            const progressBar = el.querySelector('.audio-progress');
+            progressBar.addEventListener('click', (e) => {
+                if (!audio) return;
+                const rect = progressBar.getBoundingClientRect();
+                const percent = (e.clientX - rect.left) / rect.width;
+                audio.currentTime = percent * audio.duration;
+            });
+        });
+        
         div.querySelectorAll('.file-container').forEach(el => {
             el.addEventListener('click', (e) => {
                 if (e.target.classList.contains('download-btn')) return;
@@ -1171,14 +1386,12 @@
         document.getElementById('pinnedText').innerHTML = 
             `📌 Закреплённых сообщений: ${count} <span class="pinned-count">(нажмите чтобы перейти)</span>`;
         
-        // При клике на бар - прокручиваем к первому закреплённому
         bar.onclick = () => {
             const firstPinnedId = pinnedMessages[0];
             const container = document.getElementById('messagesContainer');
             const pinnedElement = container.querySelector(`[data-msg-id="${firstPinnedId}"]`);
             if (pinnedElement) {
                 pinnedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Подсвечиваем
                 pinnedElement.style.transition = 'background 0.5s';
                 pinnedElement.style.background = '#2b5278';
                 setTimeout(() => {
@@ -1260,8 +1473,7 @@
     // ======== OPEN/CLOSE CHAT ========
     function openChat(chatId) {
         state.currentChatId = chatId;
-        const chatView = document.getElementById('chatView');
-        chatView.classList.add('open');
+        document.getElementById('chatView').classList.add('open');
         renderMessages();
         updateChatHeader();
         saveState();
@@ -1276,10 +1488,10 @@
     }
 
     // ======== MESSAGING ========
-    function sendMessage(text, videoData, isCircle, fileData) {
+    function sendMessage(text, videoData, isCircle, fileData, audioData) {
         const chat = getChat(state.currentChatId);
         if (!chat) return;
-        if (!text && !videoData && !fileData) return;
+        if (!text && !videoData && !fileData && !audioData) return;
         
         const msg = {
             id: generateId(),
@@ -1288,6 +1500,7 @@
             video: videoData || null,
             isCircle: isCircle || false,
             file: fileData || null,
+            audio: audioData || null,
             time: Date.now(),
             isBot: false,
             isSystem: false,
@@ -1387,6 +1600,78 @@
         renderAll();
         openChat(newChat.id);
         return true;
+    }
+
+    // ======== VOICE RECORDING ========
+    function startVoiceRecording() {
+        if (state.isRecording) return;
+        
+        const voiceBar = document.getElementById('voiceRecordBar');
+        const sendBtn = document.getElementById('sendBtn');
+        
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                state.mediaRecorder = new MediaRecorder(stream);
+                state.audioChunks = [];
+                state.isRecording = true;
+                state.recordingSeconds = 0;
+                state.recordingStartTime = Date.now();
+                
+                state.mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) state.audioChunks.push(e.data);
+                };
+                
+                state.mediaRecorder.onstop = () => {
+                    const blob = new Blob(state.audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const audioData = {
+                            data: ev.target.result,
+                            duration: state.recordingSeconds,
+                        };
+                        sendMessage(null, null, false, null, audioData);
+                        state.audioChunks = [];
+                        state.isRecording = false;
+                        voiceBar.classList.remove('show');
+                        sendBtn.classList.remove('recording');
+                        document.getElementById('voiceTimer').textContent = '0:00';
+                        clearInterval(state.recordingTimer);
+                        stream.getTracks().forEach(t => t.stop());
+                    };
+                    reader.readAsDataURL(blob);
+                };
+                
+                state.mediaRecorder.start();
+                voiceBar.classList.add('show');
+                sendBtn.classList.add('recording');
+                
+                clearInterval(state.recordingTimer);
+                state.recordingTimer = setInterval(() => {
+                    state.recordingSeconds++;
+                    document.getElementById('voiceTimer').textContent = formatDuration(state.recordingSeconds);
+                }, 1000);
+            })
+            .catch(err => {
+                alert('❌ Ошибка доступа к микрофону: ' + err.message);
+            });
+    }
+
+    function stopVoiceRecording() {
+        if (state.mediaRecorder && state.isRecording) {
+            state.mediaRecorder.stop();
+        }
+    }
+
+    function cancelVoiceRecording() {
+        if (state.mediaRecorder && state.isRecording) {
+            state.mediaRecorder.stop();
+            state.audioChunks = [];
+            state.isRecording = false;
+            document.getElementById('voiceRecordBar').classList.remove('show');
+            document.getElementById('sendBtn').classList.remove('recording');
+            document.getElementById('voiceTimer').textContent = '0:00';
+            clearInterval(state.recordingTimer);
+        }
     }
 
     // ======== AUTH ========
@@ -1619,7 +1904,7 @@
                 data: e.target.result,
             };
             const text = document.getElementById('messageInput').value.trim();
-            sendMessage(text, null, false, fileData);
+            sendMessage(text, null, false, fileData, null);
             document.getElementById('messageInput').value = '';
             clearFilePreview();
         };
@@ -1670,7 +1955,7 @@
                         if (blob.size > 0) {
                             const reader = new FileReader();
                             reader.onload = (ev) => {
-                                sendMessage(null, ev.target.result, true, null);
+                                sendMessage(null, ev.target.result, true, null, null);
                                 closeCircleRecorder();
                             };
                             reader.readAsDataURL(blob);
@@ -1923,26 +2208,63 @@
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', logout);
 
-        // Chat view controls
+        // Chat controls
         document.getElementById('backBtn').addEventListener('click', closeChat);
 
         // Send message
-        document.getElementById('sendBtn').addEventListener('click', () => {
+        function handleSend() {
             const input = document.getElementById('messageInput');
             if (state.pendingFile) {
                 sendFileMessage();
             } else if (input.value.trim()) {
-                sendMessage(input.value.trim(), null, false, null);
+                sendMessage(input.value.trim(), null, false, null, null);
                 input.value = '';
             }
-        });
-        
+        }
+
+        document.getElementById('sendBtn').addEventListener('click', handleSend);
         document.getElementById('messageInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                document.getElementById('sendBtn').click();
+                handleSend();
             }
         });
+
+        // Voice
+        let voicePressTimer = null;
+        const voiceBtn = document.getElementById('voiceBtn');
+        
+        voiceBtn.addEventListener('mousedown', () => {
+            voicePressTimer = setTimeout(() => {
+                startVoiceRecording();
+            }, 300);
+        });
+        voiceBtn.addEventListener('mouseup', () => {
+            clearTimeout(voicePressTimer);
+            if (state.isRecording) {
+                stopVoiceRecording();
+            }
+        });
+        voiceBtn.addEventListener('mouseleave', () => {
+            clearTimeout(voicePressTimer);
+        });
+        
+        voiceBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            voicePressTimer = setTimeout(() => {
+                startVoiceRecording();
+            }, 300);
+        });
+        voiceBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            clearTimeout(voicePressTimer);
+            if (state.isRecording) {
+                stopVoiceRecording();
+            }
+        });
+        
+        document.getElementById('voiceCancelBtn').addEventListener('click', cancelVoiceRecording);
+        document.getElementById('voiceSendBtn').addEventListener('click', stopVoiceRecording);
 
         // Camera
         document.getElementById('cameraBtn').addEventListener('click', handleCamera);
@@ -1961,14 +2283,14 @@
                         type: file.type,
                         data: ev.target.result,
                     };
-                    sendMessage(null, null, false, fileData);
+                    sendMessage(null, null, false, fileData, null);
                 };
                 reader.readAsDataURL(file);
             }
             e.target.value = '';
         });
 
-        // File upload
+        // File
         document.getElementById('fileBtn').addEventListener('click', () => {
             document.getElementById('fileInput').click();
         });
@@ -1979,7 +2301,7 @@
         });
         document.getElementById('removeFileBtn').addEventListener('click', clearFilePreview);
 
-        // Video upload
+        // Video
         document.getElementById('videoBtn').addEventListener('click', handleVideoUpload);
         document.getElementById('videoFileInput').addEventListener('change', (e) => {
             if (e.target.files.length) {
@@ -1990,7 +2312,7 @@
                 }
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    sendMessage(null, ev.target.result, false, null);
+                    sendMessage(null, ev.target.result, false, null, null);
                 };
                 reader.readAsDataURL(file);
             }
@@ -2000,7 +2322,7 @@
         // Circle
         document.getElementById('circleBtn').addEventListener('click', startCircleRecording);
 
-        // Add button
+        // Add
         document.getElementById('addBtn').addEventListener('click', showCreateMenu);
 
         // Modal close
@@ -2009,7 +2331,7 @@
             if (e.target === e.currentTarget) closeModal();
         });
 
-        // Close chat on back gesture (Android)
+        // Escape
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && document.getElementById('chatView').classList.contains('open')) {
                 closeChat();
