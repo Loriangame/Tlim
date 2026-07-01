@@ -883,13 +883,11 @@
             <span style="font-weight:300;color:#8e9fb1;font-size:20px;">мессенджер</span>
         </h1>
         <div class="login-box" id="loginBox">
-            <!-- Tabs -->
             <div class="tab-buttons">
                 <button class="active" id="tabPassword">🔑 Пароль</button>
                 <button id="tabCode">📧 Регистрация</button>
             </div>
 
-            <!-- Password Login Form -->
             <div id="passwordForm">
                 <input type="text" id="loginUsername" placeholder="Имя пользователя" />
                 <div class="password-toggle">
@@ -898,11 +896,9 @@
                 </div>
                 <button class="btn-primary" id="loginPasswordBtn">Войти в Tlim</button>
                 <div id="loginError" class="error-msg hidden"></div>
-                <div id="loginSuccess" class="success-msg hidden"></div>
                 <div class="info-msg" id="forgotPasswordLink">Нет аккаунта? Зарегистрироваться</div>
             </div>
 
-            <!-- Registration/Code Form -->
             <div id="codeForm" style="display:none;">
                 <input type="text" id="regUsername" placeholder="Придумайте имя пользователя" />
                 <input type="email" id="regEmail" placeholder="Почта (например, @yandex.ru)" />
@@ -1345,7 +1341,7 @@
                 }
             } else if (msg.video) {
                 if (msg.isCircle) {
-                    content += `<video class="circle-video" src="${msg.video}" controls loop></video>`;
+                    content += `<video class="circle-video" src="${msg.video}" controls loop style="width:180px;height:180px;border-radius:50%;object-fit:cover;border:2px solid #64b5f6;"></video>`;
                 } else {
                     content += `<video src="${msg.video}" controls style="max-width:100%;border-radius:12px;"></video>`;
                 }
@@ -1489,6 +1485,7 @@
 
     // ======== CHAT CREATION ========
     function createChat(type, name, participants, participantNames) {
+        // Проверяем, существует ли чат
         const existing = state.chats.find(c => c.name === name && c.type === type);
         if (existing) {
             alert('Чат с таким названием уже существует!');
@@ -1552,7 +1549,6 @@
         return Math.floor(100000 + Math.random() * 900000).toString();
     }
 
-    // Password Login
     function loginWithPassword() {
         const name = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value.trim();
@@ -1581,7 +1577,6 @@
         loginUser(user);
     }
 
-    // Registration
     function registerUser() {
         const name = document.getElementById('regUsername').value.trim();
         const email = document.getElementById('regEmail').value.trim();
@@ -1653,7 +1648,6 @@
         }, 200);
     }
 
-    // Code Verify
     function verifyCode() {
         const code = document.getElementById('verifyCode').value.trim();
         const errorEl = document.getElementById('verifyError');
@@ -1673,7 +1667,6 @@
         }
     }
 
-    // Common login
     function loginUser(user) {
         state.user = user;
         state.bot.setUserName(user.name);
@@ -1769,7 +1762,6 @@
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainApp').style.display = 'none';
         document.getElementById('loginError').classList.add('hidden');
-        document.getElementById('loginSuccess').classList.add('hidden');
         document.getElementById('codeError').classList.add('hidden');
         document.getElementById('codeSuccess').classList.add('hidden');
         document.getElementById('verifyError').classList.add('hidden');
@@ -1883,7 +1875,8 @@
 
     function showCreateGroup() {
         let selectedUsers = [];
-
+        const searchInput = document.getElementById('searchUsersInput');
+        
         function renderGroupModal() {
             const allUsersHtml = state.allUsers
                 .filter(u => u.id !== state.user.id)
@@ -1943,17 +1936,27 @@
                             }
                         });
                     });
+                    
+                    // Также добавляем обработчик на весь блок
+                    resultsDiv.querySelectorAll('.user-search-result').forEach(el => {
+                        el.addEventListener('click', (e) => {
+                            if (e.target.classList.contains('add-btn')) return;
+                            const btn = el.querySelector('.add-btn');
+                            if (btn) btn.click();
+                        });
+                    });
                 }
             }
 
             searchInput.addEventListener('input', updateSearchResults);
             updateSearchResults();
 
-            document.querySelectorAll('.remove-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    selectedUsers = selectedUsers.filter(u => u.id !== btn.dataset.id);
+            // Обработчики для удаления пользователей
+            document.addEventListener('click', function handler(e) {
+                if (e.target.classList.contains('remove-btn')) {
+                    selectedUsers = selectedUsers.filter(u => u.id !== e.target.dataset.id);
                     renderGroupModal();
-                });
+                }
             });
 
             document.getElementById('confirmGroupBtn').addEventListener('click', () => {
@@ -2013,10 +2016,13 @@
         input.onchange = () => {
             if (input.files.length) {
                 const file = input.files[0];
-                if (!file.type.startsWith('video/')) return alert('Пожалуйста, выберите видео');
+                if (!file.type.startsWith('video/')) {
+                    alert('Пожалуйста, выберите видеофайл');
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    sendMessage(null, e.target.result, false);
+                    sendMessage(null, e.target.result, false, null);
                 };
                 reader.readAsDataURL(file);
             }
@@ -2058,7 +2064,7 @@
                         const reader = new FileReader();
                         reader.onload = (ev) => {
                             if (state.circleChunks.length) {
-                                sendMessage(null, ev.target.result, true);
+                                sendMessage(null, ev.target.result, true, null);
                             }
                             closeCircleRecorder();
                         };
@@ -2073,7 +2079,9 @@
                     state.circleTimer = setInterval(() => {
                         state.circleSeconds++;
                         timerEl.textContent = state.circleSeconds + ' сек';
-                        if (state.circleSeconds >= 5) stopCircleRecording();
+                        if (state.circleSeconds >= 5) {
+                            stopCircleRecording();
+                        }
                     }, 1000);
                 };
 
@@ -2081,7 +2089,7 @@
                 document.getElementById('circleCancelBtn').onclick = closeCircleRecorder;
             })
             .catch(err => {
-                alert('Ошибка доступа к камере: ' + err.message);
+                alert('Ошибка доступа к камере: ' + err.message + '\nПожалуйста, разрешите доступ к камере и микрофону.');
                 closeCircleRecorder();
             });
     }
@@ -2140,7 +2148,6 @@
         document.getElementById('passwordForm').style.display = 'none';
         document.getElementById('codeForm').style.display = 'block';
         document.getElementById('loginError').classList.add('hidden');
-        document.getElementById('loginSuccess').classList.add('hidden');
     }
 
     function switchToPasswordTab() {
@@ -2211,7 +2218,7 @@
             if (state.pendingFile) {
                 sendFileMessage();
             } else if (input.value.trim()) {
-                sendMessage(input.value.trim(), null, false);
+                sendMessage(input.value.trim(), null, false, null);
                 input.value = '';
             }
         });
